@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+@theme {
+  --color-sidebar: #0a0714;
+  --color-sidebar-secondary: #0d0a19;
+  --color-canvas: #080611;
+  --color-surface: #100c20;
+  --color-elevated: #151027;
+  --color-ink: #f5f3ff;
+  --color-muted: #a5a0b8;
+  --color-primary: #8b5cf6;
+  --color-primary-soft: #a78bfa;
+  --color-success: #22c55e;
+  --color-warning: #facc15;
+  --color-danger: #f43f5e;
+  --color-info: #38bdf8;
+  --color-pink: #e879f9;
+  --font-sans: Inter, "Segoe UI", Arial, sans-serif;
+}
+
+:root {
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  color: #f5f3ff;
+  background: #080611;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --border: rgba(167, 139, 250, 0.14);
+  --muted: #a5a0b8;
+  --subtle: #716b83;
+  --purple: #a78bfa;
+}
+
+* { box-sizing: border-box; }
+body { min-width: 320px; min-height: 100vh; margin: 0; }
+button, input, select { font: inherit; }
+button { color: inherit; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 2px solid #a78bfa;
+  outline-offset: 3px;
+}
+::selection { color: #f5f3ff; background: rgba(139, 92, 246, 0.5); }
+#root { min-height: 100vh; }

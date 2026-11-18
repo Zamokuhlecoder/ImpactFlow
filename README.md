@@ -8,7 +8,7 @@ ImpactFlow is a staged portfolio project for demonstrating how operational data 
 
 ## Current status
 
-**Phase 1 foundation:** a responsive dark React dashboard and navigable module design previews using synthetic development data. No API, database, authentication, pipeline execution, or external integration is implemented yet. All module views are previews, not operational tools; dashboard values must not be interpreted as live organisational data.
+**Phase 2 foundation:** a responsive dark React dashboard with synthetic development data, plus a FastAPI service, PostgreSQL configuration, and liveness/readiness checks. The API does not yet expose business data, and the dashboard remains disconnected from it. Authentication, pipeline execution, and external integrations are not implemented. Module views remain previews, and dashboard values are not live organisational data.
 
 ## Start the frontend
 
@@ -42,6 +42,6 @@ npm test
 
 ## Planned platform architecture
 
-The target architecture is a React/TypeScript application with a Python/FastAPI service, PostgreSQL warehouse, and progressively introduced ingestion/ETL, medallion storage, dbt, Airflow, governance, monitoring, and Power BI documentation. Those services will be implemented in later phases; none are represented as operational by the current UI.
+The current backend foundation is documented in [backend/README.md](backend/README.md). PostgreSQL can be started locally with Docker Compose; database readiness is reported separately from liveness. There are not yet business models or migrations. The target architecture also includes progressively introduced ingestion/ETL, medallion storage, dbt, Airflow, governance, monitoring, and Power BI documentation; those capabilities are future phases, not operational features.
 
 See [docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md) and [docs/SYSTEM_ARCHITECTURE.md](docs/SYSTEM_ARCHITECTURE.md) for phase status and diagrams.

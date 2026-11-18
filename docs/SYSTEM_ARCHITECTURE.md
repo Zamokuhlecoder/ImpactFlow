@@ -2,20 +2,22 @@
 
 ## Implemented now
 
-The current browser app is a client-side React dashboard with navigable module design previews. Its data generator produces repeatable synthetic samples for a fixed seed and reference date; Axios and TanStack Query are configured as frontend integration foundations but are not used to retrieve dashboard values. Framer Motion animates dashboard metrics with reduced-motion support. There is no backend or persistence layer in this phase.
+The browser app is a client-side React dashboard with navigable module design previews. Its data generator produces repeatable synthetic samples for a fixed seed and reference date; Axios and TanStack Query are configured but are not used to retrieve dashboard values. Framer Motion animates dashboard metrics with reduced-motion support.
+
+The backend now includes a FastAPI app, SQLAlchemy engine/session infrastructure, and Alembic migration scaffolding. Liveness does not require a database; readiness checks database connectivity when configured and returns an unavailable response otherwise. There are no business models, migrations, authentication, or data endpoints yet. PostgreSQL startup has not been verified in this environment.
 
 ```mermaid
 flowchart LR
     U[Workspace user] --> FE[React + TypeScript dashboard]
     FE --> UI[Responsive layout and Recharts visualisations]
     FE --> SD[Synthetic seeded dashboard data]
-    AC[Axios client configuration] -. future API requests .-> API[FastAPI - planned]
-    API -. future persistence .-> PG[PostgreSQL - planned]
+    AC[Axios client configuration] -. not connected .-> API[FastAPI health endpoints]
+    API -. configured; runtime not verified .-> PG[PostgreSQL]
 ```
 
 ## Intended evolution
 
-The architecture below is a target, not a description of currently working services.
+The architecture below is a target, not a description of currently working services. Its ingestion, transformation, storage, orchestration, warehouse, and reporting components are planned.
 
 ```mermaid
 flowchart LR
@@ -26,7 +28,7 @@ flowchart LR
     SI --> D[dbt warehouse models - planned]
     D --> G[Gold reporting datasets - planned]
     G --> BI[Power BI - planned]
-    API[FastAPI - planned] <--> PG[(PostgreSQL - planned)]
+    API[FastAPI - implemented foundation] <--> PG[(PostgreSQL - configured)]
     FE[React dashboard] --> API
     O[Airflow orchestration - planned] --> I
     O --> T

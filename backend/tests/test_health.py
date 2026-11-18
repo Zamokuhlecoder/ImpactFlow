@@ -1,7 +1,20 @@
 from fastapi.testclient import TestClient
 
 from app.core.config import Settings
+from app.database.session import create_database_engine
 from app.main import create_app
+
+
+def test_standard_postgresql_url_uses_psycopg_and_preserves_neon_ssl() -> None:
+    engine = create_database_engine(
+        "postgresql://impactflow:secret@ep-example.neon.tech/impactflow?sslmode=require"
+    )
+
+    try:
+        assert engine.url.drivername == "postgresql+psycopg"
+        assert engine.url.query["sslmode"] == "require"
+    finally:
+        engine.dispose()
 
 
 def test_liveness_does_not_require_database() -> None:

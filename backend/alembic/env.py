@@ -3,8 +3,10 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 
 from alembic import context
+from app import models  # noqa: F401
 from app.core.config import Settings
 from app.database.base import Base
+from app.database.session import normalize_database_url
 
 config = context.config
 if config.config_file_name is not None:
@@ -12,7 +14,8 @@ if config.config_file_name is not None:
 
 settings = Settings()
 if settings.database_url:
-    config.set_main_option("sqlalchemy.url", settings.database_url.replace("%", "%%"))
+    database_url = normalize_database_url(settings.database_url)
+    config.set_main_option("sqlalchemy.url", database_url.replace("%", "%%"))
 target_metadata = Base.metadata
 
 

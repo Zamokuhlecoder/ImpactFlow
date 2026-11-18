@@ -13,7 +13,7 @@ export function StatusBadge({ status }: { status: PipelineStatus }) {
   return <span className={`status-badge status-${status.toLowerCase()}`}><span />{status}</span>
 }
 
-export function ExecutionTable({ executions, search }: { executions: Execution[]; search: string }) {
+export function ExecutionTable({ executions, search, mode = 'demo' }: { executions: Execution[]; search: string; mode?: 'api' | 'demo' }) {
   const [status, setStatus] = useState('All')
   const [sortKey, setSortKey] = useState<SortKey>('executedAt')
   const [ascending, setAscending] = useState(false)
@@ -55,7 +55,7 @@ export function ExecutionTable({ executions, search }: { executions: Execution[]
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
     const link = document.createElement('a')
     link.href = url
-    link.download = 'impactflow-demo-pipeline-executions.csv'
+    link.download = `impactflow-${mode}-pipeline-executions.csv`
     link.click()
     URL.revokeObjectURL(url)
   }
@@ -68,9 +68,9 @@ export function ExecutionTable({ executions, search }: { executions: Execution[]
 
   return (
     <article className="panel executions-panel">
-      <SectionHeading title="Recent pipeline executions" subtitle="A closer look at your synthetic pipeline activity" action={
+      <SectionHeading title="Recent pipeline executions" subtitle={mode === 'api' ? 'Recorded pipeline metadata from the API' : 'A closer look at synthetic pipeline activity'} action={
         <div className="table-actions">
-          <label className="status-filter"><span className="sr-only">Filter by status</span><select value={status} onChange={(event) => { setStatus(event.target.value); setPage(0) }}><option>All</option><option>Succeeded</option><option>Running</option><option>Failed</option></select></label>
+          <label className="status-filter"><span className="sr-only">Filter by status</span><select value={status} onChange={(event) => { setStatus(event.target.value); setPage(0) }}><option>All</option><option>Succeeded</option><option>Running</option><option>Warning</option><option>Failed</option></select></label>
           <button className="button button-small" onClick={exportExecutions}><Download size={14} /> Export</button>
         </div>
       } />

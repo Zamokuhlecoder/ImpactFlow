@@ -1,9 +1,31 @@
 from pathlib import Path
+from typing import Literal
+from urllib.parse import urlsplit
 
-from pydantic import Field
+from pydantic import BaseModel, Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
+
+
+class SourceConnection(BaseModel):
+    kind: Literal["rest", "postgresql"]
+    url: SecretStr
+    table: str | None = Field(default=None, min_length=1, max_length=63)
+    schema_name: str = Field(default="public", min_length=1, max_length=63)
+
+    @model_validator(mode="after")
+    def validate_connection(self) -> "SourceConnection":
+        url = urlsplit(self.url.get_secret_value())
+        if self.kind == "rest" and (url.scheme not in {"http", "https"} or not url.hostname):
+            raise ValueError("REST connections require an HTTP or HTTPS URL.")
+        if self.kind == "postgresql" and (
+            url.scheme not in {"postgresql", "postgresql+psycopg"}
+            or not url.hostname
+            or not self.table
+        ):
+            raise ValueError("PostgreSQL connections require a URL and table.")
+        return self
 
 
 class Settings(BaseSettings):
@@ -24,3 +46,5 @@ class Settings(BaseSettings):
         default_factory=lambda: ["http://localhost:5173", "http://127.0.0.1:5173"]
     )
     docs_enabled: bool = True
+    bronze_dir: Path = PROJECT_ROOT / ".impactflow" / "bronze"
+    source_connections: dict[str, SourceConnection] = Field(default_factory=dict)

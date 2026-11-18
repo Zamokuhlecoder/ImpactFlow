@@ -19,7 +19,9 @@ venv/
 .ruff_cache/
 
 # Local data and editor files
+.impactflow/
 *.log
 .DS_Store
+*.egg-info/
 .vscode/*
 !.vscode/extensions.json

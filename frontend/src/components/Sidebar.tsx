@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronLeft, ChevronsUpDown, Hexagon, X } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronsUpDown, Hexagon, LogOut, X } from 'lucide-react'
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { navigationGroups } from '../data/navigation'
@@ -8,9 +8,10 @@ interface SidebarProps {
   mobileOpen: boolean
   onToggleCollapse: () => void
   onCloseMobile: () => void
+  onSignOut: () => void
 }
 
-export function Sidebar({ collapsed, mobileOpen, onToggleCollapse, onCloseMobile }: SidebarProps) {
+export function Sidebar({ collapsed, mobileOpen, onToggleCollapse, onCloseMobile, onSignOut }: SidebarProps) {
   const [closedGroups, setClosedGroups] = useState<string[]>([])
   const showLabels = !collapsed || mobileOpen
 
@@ -58,9 +59,9 @@ export function Sidebar({ collapsed, mobileOpen, onToggleCollapse, onCloseMobile
           })}
         </nav>
         <div className="sidebar-footer">
-          <span className="user-avatar">TN</span>
-          {showLabels && <div className="sidebar-user"><strong>Thandi Ndlovu</strong><span>Demo workspace</span></div>}
-          {showLabels && <NavLink to="/settings" className="sidebar-settings" aria-label="Open workspace settings" onClick={onCloseMobile}><ChevronsUpDown size={15} /></NavLink>}
+          {showLabels && <span className="user-avatar">DU</span>}
+          {showLabels && <div className="sidebar-user"><strong>Demo user</strong><span>Local identity</span></div>}
+          <button type="button" className="sidebar-signout" aria-label="Sign out of demo" title="Sign out of demo" onClick={onSignOut}><LogOut size={16} /></button>
         </div>
       </aside>
     </>

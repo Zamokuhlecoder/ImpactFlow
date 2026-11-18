@@ -6,7 +6,7 @@ ImpactFlow is a phased portfolio project for enterprise data engineering and pro
 
 ## Current phase boundary
 
-The current deliverable includes the React/TypeScript/Vite dashboard foundation and a FastAPI/PostgreSQL health-check foundation. Dashboard values are synthetic and disconnected from the API. Do not imply that business data APIs, application persistence, authentication, ingestion, pipelines, alerts, or external integrations work until they are implemented and tested. Verify PostgreSQL runtime availability before describing it as operational.
+The current deliverable includes the React/TypeScript/Vite dashboard foundation and a FastAPI/PostgreSQL API with authentication and core metadata models. The dashboard remains synthetic and disconnected from the API. Pipeline execution, external ingestion, alerts, and integrations are not implemented. Verify database runtime availability before describing it as operational.
 
 Complete only the phase the user approved. After a phase, run relevant tests/builds, update directly related documentation, report remaining phases, and wait before advancing to a later major phase.
 

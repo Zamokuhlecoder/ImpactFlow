@@ -77,11 +77,13 @@ export function createDashboardSnapshot(seed = 2026, referenceDate = new Date())
     day: formatDay(89 - index, referenceDate),
     succeeded: Math.floor(4 + random() * 8),
     running: Math.floor(random() * 3),
+    warning: Math.floor(random() * 2),
     failed: Math.floor(random() * 2),
   }))
   const recentRuns = pipelineRuns.slice(-30)
   const totalSucceeded = recentRuns.reduce((sum, item) => sum + item.succeeded, 0)
   const totalRunning = recentRuns.reduce((sum, item) => sum + item.running, 0)
+  const totalWarning = recentRuns.reduce((sum, item) => sum + item.warning, 0)
   const totalFailed = recentRuns.reduce((sum, item) => sum + item.failed, 0)
   const previousSucceeded = pipelineRuns.slice(-60, -30).reduce((sum, item) => sum + item.succeeded, 0)
   const qualityTrend = Array.from({ length: 12 }, (_, index) => ({
@@ -101,10 +103,12 @@ export function createDashboardSnapshot(seed = 2026, referenceDate = new Date())
   return {
     metrics: {
       totalRecords,
+      totalSources: activeSources,
       activeSources,
       successfulPipelines: totalSucceeded,
       qualityScore: qualityTrend[qualityTrend.length - 1].score,
       beneficiaries,
+      totalProgrammes: 8,
       activeProgrammes: 8,
     },
     changes: {
@@ -123,6 +127,7 @@ export function createDashboardSnapshot(seed = 2026, referenceDate = new Date())
     pipelineStatus: [
       { name: 'Succeeded', value: totalSucceeded, color: '#22C55E' },
       { name: 'Running', value: totalRunning, color: '#FACC15' },
+      { name: 'Warning', value: totalWarning, color: '#FACC15' },
       { name: 'Failed', value: totalFailed, color: '#F43F5E' },
     ],
     programmePerformance: programmes.map((programme) => ({

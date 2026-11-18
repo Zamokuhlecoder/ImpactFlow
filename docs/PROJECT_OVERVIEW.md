@@ -6,7 +6,7 @@ ImpactFlow is a portfolio platform for demonstrating data engineering and busine
 
 ## Current deliverable
 
-Phase 2 provides the browser-based dark React dashboard and navigable design previews from Phase 1, plus a FastAPI service foundation with PostgreSQL configuration and liveness/readiness endpoints. The dashboard still generates synthetic examples for records, sources, pipeline history, data-quality trends, programme targets, and beneficiaries across the nine provinces; it is not connected to the API. The API has no business-data endpoints, models, or migrations. The interface identifies its snapshot as demonstration data and its other modules as non-operational previews.
+The current deliverable includes a React dashboard, FastAPI/PostgreSQL metadata and dashboard APIs, and CSV, XLSX, XLS and JSON file imports. Overview defaults to API data; the browser-only CSV and public World Bank population context remain available. The browser demo identity is not authentication. Other unfinished modules remain previews. No individual beneficiary records are modeled. General-purpose pipeline execution is not implemented.
 
 ## Phase roadmap
 
@@ -14,8 +14,8 @@ Phase 2 provides the browser-based dark React dashboard and navigable design pre
 |---|---|---|
 | 0 | Repository structure, documentation, design system, configuration | Foundation established |
 | 1 | React layout, navigation, charts, synthetic overview dashboard | Implemented |
-| 2 | FastAPI and PostgreSQL foundation (health checks and migration scaffolding) | Implemented; PostgreSQL runtime not verified |
-| 3 | Source management and ingestion | Not started |
+| 2 | FastAPI/PostgreSQL, authentication, core models, and business/dashboard APIs | API and database foundation implemented; authentication and access control removed at user request |
+| 3 | Source management and ingestion | File uploads, source management, local Bronze storage, history, and configured REST/PostgreSQL connectors implemented; external connections require local configuration |
 | 4 | ETL engine and medallion data lake | Not started |
 | 5 | Warehouse, dbt, and M&E indicators | Not started |
 | 6 | Airflow and pipeline monitoring | Not started |
@@ -23,8 +23,8 @@ Phase 2 provides the browser-based dark React dashboard and navigable design pre
 | 8 | Power BI documentation and reporting | Not started |
 | 9 | Azure deployment, CI/CD, and predictive analytics | Not started |
 
-Later phases require approval before implementation. Integration names in the roadmap describe intended work only. Local PostgreSQL startup and database-backed readiness require Docker/PostgreSQL and have not been verified in this environment.
+Later phases require approval before implementation. Integration names in the roadmap describe intended work only. Confirm database connectivity and migrations separately in each configured environment.
 
 ## Data safety
 
-Use synthetic, reproducible test data only. Do not add real beneficiary information or children's personal data. Treat privacy, security, and POPIA design as future implementation requirements, not as controls already provided by this frontend.
+Use synthetic demonstration and test data only. Do not add real beneficiary information or children's personal data. The API has no authentication or authorization; anyone who can reach it can read and modify data. Keep it local and do not deploy it publicly.

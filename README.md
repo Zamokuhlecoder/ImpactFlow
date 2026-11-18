@@ -8,7 +8,9 @@ ImpactFlow is a staged portfolio project for demonstrating how operational data 
 
 ## Current status
 
-**Phase 2 foundation:** a responsive dark React dashboard with synthetic development data, plus a FastAPI service, PostgreSQL configuration, and liveness/readiness checks. The API does not yet expose business data, and the dashboard remains disconnected from it. Authentication, pipeline execution, and external integrations are not implemented. Module views remain previews, and dashboard values are not live organisational data.
+**Current status:** Overview opens with database-backed data. The browser CSV view and separate public World Bank population figure remain available. Phase 3 supports CSV, JSON, XLSX and XLS files, plus configured REST and PostgreSQL sources. Other module views remain previews.
+
+**Security:** The demo user is a browser-only identity, not authentication. Sign-out only changes the local browser view; it does not protect the API. Anyone who can reach the API can read, change or delete database records and upload files. Run it only on a trusted local machine with synthetic data; do not expose it to a network or use it for production.
 
 ## Start the frontend
 
@@ -22,6 +24,8 @@ npm run dev
 
 Open the local URL printed by Vite (normally `http://localhost:5173`).
 
+The demo user stays active in the browser until **Sign out of demo** is selected. Continue again without a password; the database is shared, not owned by that identity. Select **Browser CSV** for the illustrative CSV view. **Upload programme CSV** replaces it in browser storage across reloads, not in PostgreSQL or other browsers; **Use example data** removes that saved upload. Download the example CSV for the required columns. Only upload synthetic aggregate counts, never personal data. The separate World Bank national population indicator requires internet access and is not a programme result.
+
 Other frontend commands:
 
 ```powershell
@@ -30,18 +34,17 @@ npm run lint
 npm test
 ```
 
-## Implemented in this phase
+## Frontend foundation (Phase 1)
 
 - React, TypeScript, Vite, Tailwind CSS, React Router, TanStack Query, Axios, Lucide React, Recharts, and Framer Motion foundation.
-- Responsive dark layout, collapsible grouped navigation, module previews, navigation/execution search, and demo notification and account menus.
-- Six animated KPI cards and six charts: pipeline runs, execution status, data quality, programme targets, ingestion, and beneficiary reach.
-- Searchable, sortable, filterable, paginated demo execution table with CSV export and synthetic snapshot refresh.
-- Date range changes the pipeline-run and ingestion charts; other metrics retain their stated periods. Comparisons and activity are illustrative.
+- Responsive dark layout, collapsible grouped navigation, module previews, navigation/execution search, and activity display.
+- The API view includes pipeline, quality, programme, ingestion, and beneficiary charts and a searchable pipeline execution table.
+- The no-sign-in CSV view shows programme counts, targets, reach, and provincial totals without inventing pipeline or quality metrics.
 - Seeded synthetic data generation covering all nine South African provinces; supply a reference date as well as a seed for repeatable timestamps.
 - Starter architecture documentation and contributor instructions.
 
 ## Planned platform architecture
 
-The current backend foundation is documented in [backend/README.md](backend/README.md). PostgreSQL can be started locally with Docker Compose; database readiness is reported separately from liveness. There are not yet business models or migrations. The target architecture also includes progressively introduced ingestion/ETL, medallion storage, dbt, Airflow, governance, monitoring, and Power BI documentation; those capabilities are future phases, not operational features.
+Backend setup, database migrations, file ingestion, connector configuration, worker operation, and synthetic database fixtures are documented in [backend/README.md](backend/README.md). Local PostgreSQL can be started with Docker Compose, or the API can use a Neon connection string supplied through a private environment file. The World Bank population lookup is browser-only public-data context, not an ingestion pipeline. General-purpose pipelines, managed medallion storage, dbt, Airflow, governance, monitoring, and Power BI remain later-phase capabilities.
 
 See [docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md) and [docs/SYSTEM_ARCHITECTURE.md](docs/SYSTEM_ARCHITECTURE.md) for phase status and diagrams.

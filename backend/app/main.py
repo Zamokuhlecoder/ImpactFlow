@@ -6,7 +6,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import Engine
 from sqlalchemy.orm import sessionmaker
 
+from app.api.routes.business import router as business_router
 from app.api.routes.health import router as health_router
+from app.api.routes.imports import router as imports_router
+from app.api.routes.ingestion import router as ingestion_router
+from app.api.routes.metadata import router as metadata_router
 from app.core.config import Settings
 from app.database.session import create_database_engine
 
@@ -46,10 +50,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         CORSMiddleware,
         allow_origins=app_settings.cors_origins,
         allow_credentials=True,
-        allow_methods=["GET", "OPTIONS"],
+        allow_methods=["DELETE", "GET", "OPTIONS", "PATCH", "POST"],
         allow_headers=["Authorization", "Content-Type"],
     )
     app.include_router(health_router, prefix=app_settings.api_prefix)
+    app.include_router(business_router, prefix=app_settings.api_prefix)
+    app.include_router(ingestion_router, prefix=app_settings.api_prefix)
+    app.include_router(imports_router, prefix=app_settings.api_prefix)
+    app.include_router(metadata_router, prefix=app_settings.api_prefix)
     return app
 
 

@@ -32,7 +32,7 @@ class DatasetImportRead(BaseModel):
     source_name: str
     source_type: str
     dataset_name: str
-    schema_type: Literal["aggregate", "participation"]
+    schema_type: SchemaType
     status: Literal["running", "succeeded", "failed"]
     records_received: int
     error_message: str | None

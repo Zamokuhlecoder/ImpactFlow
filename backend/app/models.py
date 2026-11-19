@@ -153,6 +153,53 @@ class DatasetImport(Base):
     )
 
 
+class TransformationRun(Base):
+    __tablename__ = "transformation_runs"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    dataset_import_id: Mapped[UUID] = mapped_column(
+        ForeignKey("dataset_imports.id", ondelete="CASCADE"), index=True
+    )
+    dataset_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("datasets.id", ondelete="SET NULL"), nullable=True
+    )
+    pipeline_name: Mapped[str] = mapped_column(String(120))
+    schema_type: Mapped[str] = mapped_column(String(20))
+    status: Mapped[str] = mapped_column(String(16), default="running")
+    records_received: Mapped[int] = mapped_column(Integer, default=0)
+    records_processed: Mapped[int] = mapped_column(Integer, default=0)
+    records_rejected: Mapped[int] = mapped_column(Integer, default=0)
+    duplicate_records: Mapped[int] = mapped_column(Integer, default=0)
+    missing_values: Mapped[int] = mapped_column(Integer, default=0)
+    quality_score: Mapped[float] = mapped_column(default=0)
+    quality_report: Mapped[dict[str, object]] = mapped_column(JSON, default=dict)
+    error_details: Mapped[str | None] = mapped_column(String(500))
+    silver_path: Mapped[str | None] = mapped_column(String(200))
+    gold_files: Mapped[dict[str, str] | None] = mapped_column(JSON)
+    quarantine_path: Mapped[str | None] = mapped_column(String(200))
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, index=True
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    dataset_import: Mapped[DatasetImport] = relationship()
+
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('running', 'succeeded', 'failed', 'warning')",
+            name="ck_transformation_runs_status",
+        ),
+        CheckConstraint(
+            "records_received >= 0 AND records_processed >= 0 AND records_rejected >= 0 "
+            "AND duplicate_records >= 0 AND missing_values >= 0",
+            name="ck_transformation_runs_counts",
+        ),
+        CheckConstraint(
+            "quality_score >= 0 AND quality_score <= 100",
+            name="ck_transformation_runs_quality_score",
+        ),
+    )
+
+
 class PipelineRun(Base):
     __tablename__ = "pipeline_runs"
 

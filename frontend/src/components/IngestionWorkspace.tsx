@@ -211,9 +211,9 @@ export function IngestionWorkspace({ page }: Props) {
             <form className="ingestion-form" onSubmit={upload}>
               <label>File source<select name="source_id" required defaultValue=""><option value="" disabled>Select a source</option>{sources.data?.filter(s => ['csv', 'excel', 'json'].includes(s.source_type.toLowerCase()) && s.status !== 'inactive').map(s => <option key={s.id} value={s.id}>{s.name} · {s.source_type}</option>)}</select></label>
               <label>Dataset name<input name="dataset_name" required maxLength={120} /></label>
-              <label>Data schema<select name="schema_type"><option value="aggregate">Programme aggregates</option><option value="participation">Synthetic participation</option></select></label>
+              <label>Data schema<select name="schema_type"><option value="aggregate">Programme aggregates</option><option value="participation">Synthetic participation</option><option value="generic">General-purpose records</option></select></label>
               <label>File (CSV, XLSX, XLS or JSON; max 2 MB)<input name="file" type="file" accept=".csv,.xlsx,.xls,.json" required /></label>
-              <p>Aggregates: name, category, province, target_beneficiaries, reached_beneficiaries; optional status. Participation: beneficiary_id, programme, province, participation_date. JSON must be an array of objects.</p>
+              <p>Choose aggregate, synthetic participation, or general-purpose records for later ETL validation. JSON must be an array of objects. Original files are preserved in Bronze.</p>
               <button className="button button-primary" disabled={busy} type="submit"><UploadCloud size={14} /> {busy ? 'Importing…' : 'Import dataset'}</button>
             </form>
           </section>
@@ -221,7 +221,7 @@ export function IngestionWorkspace({ page }: Props) {
             <form className="ingestion-form" onSubmit={importConnection}>
               <label>Connected source<select name="source_id" required defaultValue=""><option value="" disabled>Select a source</option>{sources.data?.filter(s => ['rest api', 'postgresql'].includes(s.source_type.toLowerCase()) && s.status !== 'inactive' && s.connection_ref).map(s => <option key={s.id} value={s.id}>{s.name} · {s.source_type}</option>)}</select></label>
               <label>Dataset name<input name="dataset_name" required maxLength={120} /></label>
-              <label>Data schema<select name="schema_type"><option value="aggregate">Programme aggregates</option><option value="participation">Synthetic participation</option></select></label>
+              <label>Data schema<select name="schema_type"><option value="aggregate">Programme aggregates</option><option value="participation">Synthetic participation</option><option value="generic">General-purpose records</option></select></label>
               <p>REST sources must return a JSON array. PostgreSQL imports save a JSON snapshot of the configured table.</p>
               <button className="button button-primary" disabled={busy} type="submit"><Database size={14} /> {busy ? 'Importing…' : 'Import connection'}</button>
             </form>

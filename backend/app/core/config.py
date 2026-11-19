@@ -47,4 +47,7 @@ class Settings(BaseSettings):
     )
     docs_enabled: bool = True
     bronze_dir: Path = PROJECT_ROOT / ".impactflow" / "bronze"
+    silver_dir: Path = PROJECT_ROOT / ".impactflow" / "silver"
+    gold_dir: Path = PROJECT_ROOT / ".impactflow" / "gold"
+    quarantine_dir: Path = PROJECT_ROOT / ".impactflow" / "quarantine"
     source_connections: dict[str, SourceConnection] = Field(default_factory=dict)

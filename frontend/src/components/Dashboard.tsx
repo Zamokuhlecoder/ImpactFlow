@@ -9,19 +9,29 @@ import { ChartErrorBoundary } from './ChartErrorBoundary'
 import { CsvOverview } from './CsvOverview'
 import { ExecutionTable } from './ExecutionTable'
 import { KpiCard } from './KpiCard'
-import { IngestionWorkspace } from './IngestionWorkspace'
 import { ModulePage } from './ModulePage'
 import { SectionHeading } from './SectionHeading'
 import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
 
 const LazyDashboardCharts = lazy(() => import('./DashboardCharts'))
+const LazyAnalyticsWorkspace = lazy(() => import('./AnalyticsWorkspace').then(module => ({ default: module.AnalyticsWorkspace })))
+const LazyArchitectureWorkspace = lazy(() => import('./ArchitectureWorkspace').then(module => ({ default: module.ArchitectureWorkspace })))
+const LazyDataProcessingWorkspace = lazy(() => import('./DataProcessingWorkspace').then(module => ({ default: module.DataProcessingWorkspace })))
+const LazyIngestionWorkspace = lazy(() => import('./IngestionWorkspace').then(module => ({ default: module.IngestionWorkspace })))
+const LazyPipelineWorkspace = lazy(() => import('./PipelineWorkspace').then(module => ({ default: module.PipelineWorkspace })))
+const LazyQualityWorkspace = lazy(() => import('./QualityWorkspace').then(module => ({ default: module.QualityWorkspace })))
 
 export default function Dashboard({ onSignOut }: { onSignOut: () => void }) {
   const { pathname } = useLocation()
   const queryClient = useQueryClient()
   const currentModule = modules.find((item) => item.path === pathname)
-  const isIngestionWorkspace = pathname === '/data-sources' || pathname === '/data-ingestion'
+  const isProcessingWorkspace = pathname === '/data-processing'
+  const isIngestionWorkspace = pathname === '/data-sources' || pathname === '/data-ingestion' || isProcessingWorkspace
+  const isPipelineWorkspace = pathname === '/data-pipelines' || pathname === '/monitoring'
+  const isAnalyticsWorkspace = pathname === '/analytics'
+  const isOperationalWorkspace = isIngestionWorkspace || isPipelineWorkspace || isAnalyticsWorkspace
+    || pathname === '/data-quality' || pathname === '/data-lake' || pathname === '/data-lineage'
   const [demoSnapshot, setDemoSnapshot] = useState(() => createDashboardSnapshot())
   const [seed, setSeed] = useState(2026)
   const [overviewMode, setOverviewMode] = useState<'csv' | 'api'>('api')
@@ -46,7 +56,7 @@ export default function Dashboard({ onSignOut }: { onSignOut: () => void }) {
   const isCsvMode = pathname === '/' && overviewMode === 'csv'
   const isApiMode = pathname === '/' && overviewMode === 'api' && apiResult !== undefined
   const snapshot = isApiMode && apiResult ? apiResult.snapshot : demoSnapshot
-  const dataMode = isIngestionWorkspace ? (readinessQuery.isSuccess ? 'api' : 'unavailable') : pathname !== '/' ? 'demo' : isCsvMode ? 'csv' : isApiMode ? 'api' : 'unavailable'
+  const dataMode = isOperationalWorkspace ? (readinessQuery.isSuccess ? 'api' : 'unavailable') : pathname !== '/' ? 'demo' : isCsvMode ? 'csv' : isApiMode ? 'api' : 'unavailable'
   const visibleIngestion = useMemo(() => snapshot.ingestionTrend.slice(-days), [days, snapshot])
 
   useEffect(() => {
@@ -55,13 +65,18 @@ export default function Dashboard({ onSignOut }: { onSignOut: () => void }) {
   }, [pathname, currentModule?.label])
 
   async function refreshSnapshot() {
-    if (isIngestionWorkspace) {
+    if (isOperationalWorkspace) {
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['dashboard-snapshot'] }),
         queryClient.invalidateQueries({ queryKey: ['ingestion-sources'] }),
         queryClient.invalidateQueries({ queryKey: ['ingestion-datasets'] }),
         queryClient.invalidateQueries({ queryKey: ['import-history'] }),
+        queryClient.invalidateQueries({ queryKey: ['processing-datasets'] }),
+        queryClient.invalidateQueries({ queryKey: ['processing-runs'] }),
+        queryClient.invalidateQueries({ queryKey: ['processing-layer'] }),
+        queryClient.invalidateQueries({ queryKey: ['processing-pipelines'] }),
       ])
-      setRefreshMessage('Workspace refresh requested.')
+      setRefreshMessage('Database-backed workspace data refreshed.')
       return
     }
     if (pathname === '/') {
@@ -113,8 +128,8 @@ export default function Dashboard({ onSignOut }: { onSignOut: () => void }) {
       <Sidebar collapsed={collapsed} mobileOpen={mobileOpen} onCloseMobile={closeMobileNavigation} onToggleCollapse={() => setCollapsed(!collapsed)} onSignOut={onSignOut} />
       <main className="main-column">
         <Topbar
-          activities={isIngestionWorkspace || (pathname === '/' && !isApiMode) ? [] : snapshot.activities}
-          apiConnected={(pathname === '/' || isIngestionWorkspace) && readinessQuery.isSuccess}
+          activities={pathname === '/' && isApiMode ? snapshot.activities : []}
+          apiConnected={(pathname === '/' || isOperationalWorkspace) && readinessQuery.isSuccess}
           days={days}
           mobileOpen={mobileOpen}
           mode={dataMode}
@@ -123,7 +138,7 @@ export default function Dashboard({ onSignOut }: { onSignOut: () => void }) {
           onRefresh={() => { void refreshSnapshot() }}
           onSearch={setSearch}
           search={search}
-          showRange={pathname === '/' && !isCsvMode}
+          showRange={(pathname === '/' && !isCsvMode) || isAnalyticsWorkspace}
           title={currentModule.label}
         />
         <div className="page-content">
@@ -173,8 +188,13 @@ export default function Dashboard({ onSignOut }: { onSignOut: () => void }) {
               </section>
               </>}
             </div>
-          ) : isIngestionWorkspace ? <IngestionWorkspace key={pathname} page={pathname === '/data-sources' ? 'sources' : 'imports'} /> : <ModulePage key={pathname} module={currentModule} snapshot={demoSnapshot} search={search} />}
-          <footer className="page-footer"><span>© ImpactFlow <span> / </span> Impact Development Foundation</span><span>Built for better data decisions <span>·</span> {pathname === '/' ? (isCsvMode ? 'Browser CSV data' : isApiMode ? 'Database-backed API data' : 'API data unavailable') : isIngestionWorkspace ? 'Shared workspace' : 'Module preview'}</span></footer>
+          ) : isProcessingWorkspace ? <Suspense fallback={<div className="panel operations-loading">Loading ETL workspace…</div>}><LazyDataProcessingWorkspace key={pathname} /></Suspense> : isIngestionWorkspace ? <Suspense fallback={<div className="panel operations-loading">Loading ingestion workspace…</div>}><LazyIngestionWorkspace key={pathname} page={pathname === '/data-sources' ? 'sources' : 'imports'} /></Suspense>
+            : isPipelineWorkspace ? <Suspense fallback={<div className="panel operations-loading">Loading pipeline workspace…</div>}><LazyPipelineWorkspace key={pathname} page={pathname === '/monitoring' ? 'monitoring' : 'pipelines'} search={search} /></Suspense>
+              : isAnalyticsWorkspace ? <Suspense fallback={<div className="panel operations-loading">Loading analytics workspace…</div>}><LazyAnalyticsWorkspace days={days} /></Suspense>
+                : pathname === '/data-quality' ? <Suspense fallback={<div className="panel operations-loading">Loading quality workspace…</div>}><LazyQualityWorkspace /></Suspense>
+                  : pathname === '/data-lake' || pathname === '/data-lineage' ? <Suspense fallback={<div className="panel operations-loading">Loading data lineage…</div>}><LazyArchitectureWorkspace page={pathname === '/data-lake' ? 'lake' : 'lineage'} /></Suspense>
+                    : <ModulePage key={pathname} module={currentModule} snapshot={demoSnapshot} search={search} />}
+          <footer className="page-footer"><span>© ImpactFlow <span> / </span> Impact Development Foundation</span><span>Built for better data decisions <span>·</span> {pathname === '/' ? (isCsvMode ? 'Browser CSV data' : isApiMode ? 'Database-backed API data' : 'API data unavailable') : isOperationalWorkspace ? 'Database-backed workspace' : 'Module preview'}</span></footer>
         </div>
       </main>
     </div>

@@ -15,7 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from app.ingestion import MAX_CSV_BYTES, MAX_CSV_ROWS, OPTIONAL_COLUMNS, REQUIRED_COLUMNS
 from app.schemas.domain import ProgrammeInput, Province
 
-SchemaType = Literal["aggregate", "participation"]
+SchemaType = Literal["aggregate", "participation", "generic"]
 PARTICIPATION_COLUMNS = {"beneficiary_id", "programme", "province", "participation_date"}
 MAX_EXPANDED_BYTES = 20 * 1024 * 1024
 
@@ -49,14 +49,20 @@ def _validate_rows(
         raise ValueError("The dataset has no data rows.")
     if len(rows) > MAX_CSV_ROWS:
         raise ValueError(f"The dataset may contain at most {MAX_CSV_ROWS} rows.")
-    required = REQUIRED_COLUMNS if schema_type == "aggregate" else PARTICIPATION_COLUMNS
+    required = (
+        REQUIRED_COLUMNS
+        if schema_type == "aggregate"
+        else PARTICIPATION_COLUMNS
+        if schema_type == "participation"
+        else set()
+    )
     optional = OPTIONAL_COLUMNS if schema_type == "aggregate" else set()
     seen_names: set[str] = set()
     validated: list[dict[str, object]] = []
     for number, row in enumerate(rows, start=1):
         missing = required - row.keys()
         unknown = row.keys() - required - optional
-        if missing or unknown:
+        if schema_type != "generic" and (missing or unknown):
             raise ValueError(f"Row {number} has missing or unsupported columns.")
         clean = {
             key: value.strip() if isinstance(value, str) else value for key, value in row.items()
@@ -71,16 +77,18 @@ def _validate_rows(
                     raise ValueError(f"Row {number} duplicates a programme name.")
                 seen_names.add(name)
                 validated.append(programme.model_dump())
-            else:
+            elif schema_type == "participation":
                 validated.append(ParticipationInput.model_validate(clean).model_dump())
+            else:
+                validated.append(clean)
         except ValidationError as error:
             fields = sorted({str(item["loc"][0]) for item in error.errors() if item["loc"]})
             raise ValueError(f"Row {number} has invalid values for: {', '.join(fields)}.") from None
     return validated
 
 
-def parse_dataset(
-    content: bytes, file_type: Literal["csv", "xlsx", "xls", "json"], schema_type: SchemaType
+def read_raw_dataset(
+    content: bytes, file_type: Literal["csv", "xlsx", "xls", "json"]
 ) -> list[dict[str, object]]:
     if not content:
         raise ValueError("The file is empty.")
@@ -167,4 +175,15 @@ def parse_dataset(
                 workbook.close()
         except (BadZipFile, KeyError, OSError, ParseError, EOFError, IndexError, TypeError):
             raise ValueError("The Excel file is invalid.") from None
+    if not rows:
+        raise ValueError("The dataset has no data rows.")
+    if len(rows) > MAX_CSV_ROWS:
+        raise ValueError(f"The dataset may contain at most {MAX_CSV_ROWS} rows.")
+    return rows
+
+
+def parse_dataset(
+    content: bytes, file_type: Literal["csv", "xlsx", "xls", "json"], schema_type: SchemaType
+) -> list[dict[str, object]]:
+    rows = read_raw_dataset(content, file_type)
     return _validate_rows(rows, schema_type)

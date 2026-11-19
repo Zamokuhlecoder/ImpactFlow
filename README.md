@@ -8,7 +8,7 @@ ImpactFlow is a staged portfolio project for demonstrating how operational data 
 
 ## Current status
 
-**Current status:** Overview opens with database-backed data. The browser CSV view and separate public World Bank population figure remain available. Phase 3 supports CSV, JSON, XLSX and XLS files, plus configured REST and PostgreSQL sources. Other module views remain previews.
+**Current status:** The database-backed overview and Phase 3 imports are available. Phase 4 adds a Pandas standardisation/validation pipeline, local Bronze/Silver/Gold files, quarantine, quality reports, run history, and the ETL Processing page. The browser CSV view and separate public World Bank population figure remain available. Other module views remain previews.
 
 **Security:** The demo user is a browser-only identity, not authentication. Sign-out only changes the local browser view; it does not protect the API. Anyone who can reach the API can read, change or delete database records and upload files. Run it only on a trusted local machine with synthetic data; do not expose it to a network or use it for production.
 
@@ -45,6 +45,6 @@ npm test
 
 ## Planned platform architecture
 
-Backend setup, database migrations, file ingestion, connector configuration, worker operation, and synthetic database fixtures are documented in [backend/README.md](backend/README.md). Local PostgreSQL can be started with Docker Compose, or the API can use a Neon connection string supplied through a private environment file. The World Bank population lookup is browser-only public-data context, not an ingestion pipeline. General-purpose pipelines, managed medallion storage, dbt, Airflow, governance, monitoring, and Power BI remain later-phase capabilities.
+Backend setup, database migrations, file ingestion, connector configuration, worker operation, ETL processing, and synthetic database fixtures are documented in [backend/README.md](backend/README.md). Local PostgreSQL can be started with Docker Compose, or the API can use a Neon connection string supplied through a private environment file. The World Bank population lookup is browser-only public-data context, not an ingestion pipeline. Distributed processing, managed object storage, dbt, Airflow, governance, monitoring, and Power BI remain later-phase capabilities.
 
 See [docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md) and [docs/SYSTEM_ARCHITECTURE.md](docs/SYSTEM_ARCHITECTURE.md) for phase status and diagrams.

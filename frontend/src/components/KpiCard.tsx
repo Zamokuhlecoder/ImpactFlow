@@ -38,9 +38,7 @@ export function KpiCard({ label, value, suffix = '', description, change, icon: 
         <span aria-hidden="true">{new Intl.NumberFormat('en-ZA', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(animateValue ? displayValue : value)}{suffix}</span>
       </div>
       <div className="kpi-bottom">
-        <p className="kpi-description">{change === null
-          ? <span className="kpi-change-unavailable">N/A</span>
-          : <span className={`kpi-change${change < 0 ? ' kpi-change-negative' : ''}`}>{change < 0 ? <ArrowDownRight size={12} /> : <ArrowUpRight size={12} />}{change > 0 ? '+' : ''}{change.toFixed(1)}%</span>} {description}</p>
+        <p className="kpi-description">{change !== null && <><span className={`kpi-change${change < 0 ? ' kpi-change-negative' : ''}`}>{change < 0 ? <ArrowDownRight size={12} /> : <ArrowUpRight size={12} />}{change > 0 ? '+' : ''}{change.toFixed(1)}%</span>{' '}</>}{description}</p>
         {change !== null && <svg className="sparkline" viewBox="0 0 64 24" fill="none" aria-hidden="true"><path d="M1 21 L11 16 L20 18 L29 10 L38 13 L47 6 L55 9 L63 2" transform={change < 0 ? 'translate(0 24) scale(1 -1)' : undefined} stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>}
       </div>
     </article>

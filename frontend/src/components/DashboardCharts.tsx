@@ -1,15 +1,17 @@
 import { useReducedMotion } from 'framer-motion'
 import {
-  Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart,
-  ResponsiveContainer, Tooltip, XAxis, YAxis,
+  Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
 import type { DashboardSnapshot } from '../types/dashboard'
 import { SectionHeading } from './SectionHeading'
 
-const colors = { purple: '#A78BFA', primary: '#8B5CF6', success: '#22C55E', warning: '#FACC15', error: '#F43F5E', info: '#38BDF8', pink: '#E879F9' }
+const colors = { purple: '#A78BFA', success: '#22C55E', warning: '#FACC15', error: '#F43F5E', info: '#38BDF8' }
 const axis = { fill: '#A5A0B8', fontSize: 11 }
 const grid = 'rgba(167,139,250,0.10)'
 const numberFormatter = new Intl.NumberFormat('en-ZA')
+const compactNumber = (value: number) => value >= 1000
+  ? `${new Intl.NumberFormat('en-ZA', { maximumFractionDigits: 1 }).format(value / 1000)}k`
+  : numberFormatter.format(value)
 
 type TooltipEntry = { name?: string; value?: number | string; color?: string }
 function ChartTooltip({ active, payload, label, suffix = '' }: { active?: boolean; payload?: TooltipEntry[]; label?: string; suffix?: string }) {
@@ -37,14 +39,14 @@ export default function DashboardCharts({ snapshot, visibleIngestion, days, mode
   const runs = snapshot.pipelineRuns.slice(-days)
   const status = [
     { name: 'Succeeded', value: runs.reduce((sum, item) => sum + item.succeeded, 0), color: colors.success },
-    { name: 'Running', value: runs.reduce((sum, item) => sum + item.running, 0), color: colors.warning },
+    { name: 'Running', value: runs.reduce((sum, item) => sum + item.running, 0), color: colors.info },
     { name: 'Warning', value: runs.reduce((sum, item) => sum + item.warning, 0), color: colors.warning },
     { name: 'Failed', value: runs.reduce((sum, item) => sum + item.failed, 0), color: colors.error },
   ]
   const total = status.reduce((sum, item) => sum + item.value, 0)
   const ingestionTotal = visibleIngestion.reduce((sum, item) => sum + item.records, 0)
   const animateChart = !reduceMotion
-  const runLegend = [{ label: 'Succeeded', color: colors.success }, { label: 'Running', color: colors.warning }, { label: 'Warning', color: colors.warning }, { label: 'Failed', color: colors.error }]
+  const runLegend = [{ label: 'Succeeded', color: colors.success }, { label: 'Running', color: colors.info }, { label: 'Warning', color: colors.warning }, { label: 'Failed', color: colors.error }]
   const dataLabel = mode === 'api' ? 'API DATA' : 'DEMO DATA'
 
   return (
@@ -69,26 +71,26 @@ export default function DashboardCharts({ snapshot, visibleIngestion, days, mode
       </ChartCard>
 
       <ChartCard title="Pipeline execution status" subtitle={`Execution totals · last ${days} days`} className="status-panel">
-        {mode === 'api' && total === 0 ? <div className="chart-empty chart-empty-compact">No pipeline execution records in this range.</div> : <div className="pipeline-chart-wrap">
-          <div className="pipeline-chart">
-            <ResponsiveContainer width="100%" height="100%"><PieChart>
-              <Pie data={status} dataKey="value" nameKey="name" innerRadius="72%" outerRadius="91%" paddingAngle={3} stroke="none" isAnimationActive={animateChart}>
-                {status.map((entry) => <Cell fill={entry.color} key={entry.name} />)}
-              </Pie><Tooltip content={<ChartTooltip />} />
-            </PieChart></ResponsiveContainer>
-            <div className="donut-label"><strong>{numberFormatter.format(total)}</strong><span>total runs</span></div>
+        {mode === 'api' && total === 0 ? <div className="chart-empty chart-empty-compact">No pipeline execution records in this range.</div> : <div className="status-breakdown">
+          <div aria-label={`${numberFormatter.format(total)} total runs`} className="status-breakdown-bar">
+            {status.filter(item => item.value > 0).map(item => <span
+              key={item.name}
+              style={{ background: item.color, width: `${item.value / total * 100}%` }}
+              title={`${item.name}: ${numberFormatter.format(item.value)}`}
+            />)}
           </div>
-          <div className="legend-list">{status.map((item) => <div className="legend-row" key={item.name}><i style={{ background: item.color }} /><span>{item.name}</span><strong>{numberFormatter.format(item.value)}</strong></div>)}</div>
+          <div className="status-breakdown-total"><strong>{numberFormatter.format(total)}</strong><span>recorded executions</span></div>
+          <div className="status-breakdown-list">{status.map((item) => <div className="legend-row" key={item.name}><i style={{ background: item.color }} /><span>{item.name}</span><strong>{numberFormatter.format(item.value)}</strong></div>)}</div>
         </div>}
       </ChartCard>
 
       <ChartCard title="Data quality trend" subtitle="Quality score · latest recorded snapshots" className="quality-panel" action={<span className="chart-highlight">{snapshot.metrics.qualityScore}% <small>current</small></span>}>
         {mode === 'api' && snapshot.qualityTrend.length === 0 ? <div className="chart-empty">No quality snapshots have been recorded.</div> : <div className="chart-area chart-medium">
           <ResponsiveContainer width="100%" height="100%"><AreaChart data={snapshot.qualityTrend} margin={{ top: 12, right: 8, left: -18, bottom: 0 }}>
-            <defs><linearGradient id="quality-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor={colors.primary} stopOpacity={0.38} /><stop offset="100%" stopColor={colors.primary} stopOpacity={0.01} /></linearGradient></defs>
+            <defs><linearGradient id="quality-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor={colors.purple} stopOpacity={0.2} /><stop offset="100%" stopColor={colors.purple} stopOpacity={0.01} /></linearGradient></defs>
             <CartesianGrid stroke={grid} vertical={false} strokeDasharray="3 5" />
             <XAxis axisLine={false} dataKey="day" tickLine={false} tick={axis} minTickGap={28} />
-            <YAxis axisLine={false} domain={[85, 100]} tickLine={false} tick={axis} tickFormatter={(value: number) => `${value}%`} />
+            <YAxis axisLine={false} domain={[0, 100]} tickLine={false} tick={axis} tickFormatter={(value: number) => `${value}%`} />
             <Tooltip content={<ChartTooltip suffix="%" />} />
             <Area name="Quality score" dataKey="score" fill="url(#quality-fill)" stroke={colors.purple} strokeWidth={2.5} type="monotone" isAnimationActive={animateChart} />
           </AreaChart></ResponsiveContainer>
@@ -102,7 +104,7 @@ export default function DashboardCharts({ snapshot, visibleIngestion, days, mode
           <ResponsiveContainer width="100%" height="100%"><BarChart data={snapshot.programmePerformance} layout="vertical" margin={{ top: 5, right: 8, left: 0, bottom: 0 }} barGap={2}>
             <CartesianGrid stroke={grid} horizontal={false} strokeDasharray="3 5" />
             <XAxis axisLine={false} domain={[0, 100]} tickLine={false} tick={axis} tickFormatter={(value: number) => `${value}%`} type="number" />
-            <YAxis axisLine={false} dataKey="programme" tickLine={false} tick={axis} type="category" width={112} interval={0} />
+            <YAxis axisLine={false} dataKey="programme" tickLine={false} tick={axis} type="category" tickFormatter={(value: string) => value.replace(/([a-z])([A-Z])/g, '$1 $2')} width={112} interval={0} />
             <Tooltip content={<ChartTooltip suffix="%" />} cursor={{ fill: 'rgba(167,139,250,0.06)' }} />
             <Bar name="Actual" dataKey="achievement" fill={colors.purple} radius={[0, 4, 4, 0]} barSize={8} isAnimationActive={animateChart} />
             <Bar name="Target" dataKey="target" fill="rgba(167,139,250,0.28)" radius={[0, 4, 4, 0]} barSize={8} isAnimationActive={animateChart} />
@@ -117,7 +119,7 @@ export default function DashboardCharts({ snapshot, visibleIngestion, days, mode
             <defs><linearGradient id="ingestion-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor={colors.info} stopOpacity={0.3} /><stop offset="100%" stopColor={colors.info} stopOpacity={0.01} /></linearGradient></defs>
             <CartesianGrid stroke={grid} vertical={false} strokeDasharray="3 5" />
             <XAxis axisLine={false} dataKey="day" tickLine={false} tick={axis} minTickGap={35} />
-            <YAxis axisLine={false} tickLine={false} tick={axis} tickFormatter={(value: number) => `${Math.round(value / 1000)}k`} />
+            <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={axis} tickFormatter={compactNumber} />
             <Tooltip content={<ChartTooltip />} />
             <Area name="Records" dataKey="records" fill="url(#ingestion-fill)" stroke={colors.info} strokeWidth={2} type="monotone" isAnimationActive={animateChart} />
           </AreaChart></ResponsiveContainer>
@@ -129,7 +131,7 @@ export default function DashboardCharts({ snapshot, visibleIngestion, days, mode
         {mode === 'api' && snapshot.provincialReach.length === 0 ? <div className="chart-empty">No aggregate provincial reach data has been recorded.</div> : <div className="chart-area chart-provinces">
           <ResponsiveContainer width="100%" height="100%"><BarChart data={snapshot.provincialReach} layout="vertical" margin={{ top: 0, right: 12, left: 0, bottom: 0 }}>
             <CartesianGrid stroke={grid} horizontal={false} strokeDasharray="3 5" />
-            <XAxis axisLine={false} tickLine={false} tick={axis} type="number" tickFormatter={(value: number) => `${Math.round(value / 1000)}k`} />
+            <XAxis axisLine={false} tickLine={false} tick={axis} type="number" tickFormatter={compactNumber} />
             <YAxis axisLine={false} dataKey="province" tickLine={false} tick={axis} type="category" width={110} interval={0} />
             <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(167,139,250,0.06)' }} />
             <Bar name="Beneficiaries" dataKey="beneficiaries" fill={colors.purple} radius={[0, 4, 4, 0]} barSize={9} isAnimationActive={animateChart} />

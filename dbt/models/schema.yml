@@ -1,0 +1,51 @@
+version: 2
+
+sources:
+  - name: warehouse
+    schema: public
+    tables:
+      - name: fact_beneficiary_participation
+        columns:
+          - name: participation_key
+            tests:
+              - not_null
+              - unique
+      - name: fact_programme_outcomes
+        columns:
+          - name: outcome_key
+            tests:
+              - not_null
+              - unique
+      - name: dim_beneficiary
+      - name: dim_programme
+      - name: dim_location
+      - name: dim_date
+      - name: dim_indicator
+
+models:
+  - name: stg_beneficiary_participation
+    columns:
+      - name: participation_key
+        tests:
+          - not_null
+          - unique
+      - name: beneficiary_id
+        tests:
+          - not_null
+  - name: stg_programme_outcomes
+    columns:
+      - name: outcome_key
+        tests:
+          - not_null
+          - unique
+  - name: mart_provincial_performance
+    columns:
+      - name: province
+        tests:
+          - not_null
+          - unique
+  - name: mart_programme_performance
+    columns:
+      - name: programme
+        tests:
+          - not_null

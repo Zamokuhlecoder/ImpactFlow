@@ -16,5 +16,123 @@ services:
       timeout: 5s
       retries: 10
 
+  airflow-db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${AIRFLOW_DB_NAME:?Set AIRFLOW_DB_NAME in .env}
+      POSTGRES_USER: ${AIRFLOW_DB_USER:?Set AIRFLOW_DB_USER in .env}
+      POSTGRES_PASSWORD: ${AIRFLOW_DB_PASSWORD:?Set AIRFLOW_DB_PASSWORD in .env}
+    volumes:
+      - impactflow-airflow-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  airflow-init:
+    build:
+      context: ./airflow
+      dockerfile: Dockerfile
+    depends_on:
+      airflow-db:
+        condition: service_healthy
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_DB_USER}:${AIRFLOW_DB_PASSWORD}@airflow-db:5432/${AIRFLOW_DB_NAME}
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+      AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
+      AIRFLOW_ADMIN_USERNAME: ${AIRFLOW_ADMIN_USERNAME:?Set AIRFLOW_ADMIN_USERNAME in .env}
+      AIRFLOW_ADMIN_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:?Set AIRFLOW_ADMIN_PASSWORD in .env}
+      AIRFLOW_ADMIN_EMAIL: ${AIRFLOW_ADMIN_EMAIL:?Set AIRFLOW_ADMIN_EMAIL in .env}
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - >-
+        set -e;
+        airflow db migrate;
+        if ! airflow users list --output json | grep -q
+        "\"username\": \"$$AIRFLOW_ADMIN_USERNAME\"";
+        then airflow users create
+        --username "$$AIRFLOW_ADMIN_USERNAME"
+        --password "$$AIRFLOW_ADMIN_PASSWORD"
+        --firstname ImpactFlow
+        --lastname Admin
+        --role Admin
+        --email "$$AIRFLOW_ADMIN_EMAIL";
+        fi
+
+  airflow-webserver:
+    build:
+      context: ./airflow
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_DB_USER}:${AIRFLOW_DB_PASSWORD}@airflow-db:5432/${AIRFLOW_DB_NAME}
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+      AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
+      AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "false"
+      IMPACTFLOW_API_BASE_URL: http://host.docker.internal:8000/api/v1
+      DBT_HOST: ${DBT_HOST:-db}
+      DBT_PORT: ${DBT_PORT:-5432}
+      DBT_DATABASE: ${DBT_DATABASE:-impactflow}
+      DBT_USER: ${DBT_USER:-impactflow}
+      DBT_PASSWORD: ${DBT_PASSWORD:?Set DBT_PASSWORD in .env}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${AIRFLOW_PORT:-8080}:8080"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./dbt:/opt/airflow/dbt:ro
+    command: webserver
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  airflow-scheduler:
+    build:
+      context: ./airflow
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_DB_USER}:${AIRFLOW_DB_PASSWORD}@airflow-db:5432/${AIRFLOW_DB_NAME}
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+      AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
+      IMPACTFLOW_API_BASE_URL: http://host.docker.internal:8000/api/v1
+      DBT_HOST: ${DBT_HOST:-db}
+      DBT_PORT: ${DBT_PORT:-5432}
+      DBT_DATABASE: ${DBT_DATABASE:-impactflow}
+      DBT_USER: ${DBT_USER:-impactflow}
+      DBT_PASSWORD: ${DBT_PASSWORD:?Set DBT_PASSWORD in .env}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./dbt:/opt/airflow/dbt:ro
+    command: scheduler
+    healthcheck:
+      test: ["CMD-SHELL", "airflow jobs check --job-type SchedulerJob --hostname \"$$(hostname)\""]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
 volumes:
   impactflow-postgres:
+  impactflow-airflow-postgres:

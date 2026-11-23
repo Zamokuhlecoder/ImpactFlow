@@ -1,6 +1,6 @@
 # ImpactFlow API
 
-Phase 4 builds on Phase 3 source registration, CSV, XLSX, XLS and JSON file imports, and configured REST and PostgreSQL sources. Original files and REST responses are stored in Bronze; PostgreSQL extracts are stored as JSON snapshots. The Pandas processing pipeline standardises and validates records, writes Silver and Gold JSON files, quarantines invalid/duplicate records, and stores quality reports and transformation history in PostgreSQL. The ETL Processing page reads these real API results. Overview defaults to database-backed data; the browser-only CSV and public World Bank context are also available. Other module views remain previews.
+Phase 4 builds on Phase 3 source registration, CSV, XLSX, XLS and JSON file imports, and configured REST and PostgreSQL sources. Original files and REST responses are stored in Bronze; PostgreSQL extracts are stored as JSON snapshots. The Pandas processing pipeline standardises and validates records, writes Silver and Gold JSON files, quarantines invalid/duplicate records, and stores quality reports and transformation history in PostgreSQL. Phase 5 adds the `dim_*` / `fact_*` analytical warehouse tables and loads validated participation and programme aggregate Silver rows into them. Phase 6 adds Airflow DAGs under `airflow/dags`, a custom Airflow image with `dbt-postgres`, a dbt project with source/model tests under `dbt/`, an Airflow REST proxy, run correlation in `orchestration_runs`, and the Pipeline Orchestration frontend workspace. The ETL Processing, Data Warehouse, M&E Analytics, and orchestration pages read real API results or show explicit unavailable states.
 
 **No authentication or authorization is enforced.** Anyone who can reach the API can read, modify and delete shared data and upload files. Run only on a trusted local machine with synthetic data; do not expose this service to a network or deploy it to production. Existing account records are preserved but cannot be used to sign in.
 
@@ -8,7 +8,40 @@ Imports validate programme aggregates, synthetic participation records, or accep
 
 Imports and the initial ETL pipeline run synchronously and are limited to 2 MB and 2,000 rows. Bronze, Silver, Gold and quarantine data are stored under `.impactflow/{bronze,silver,gold,quarantine}` by default, with each layer configurable through its matching `IMPACTFLOW_*_DIR` setting. This is local development storage, not a backup or shared object store; protect the directories and back them up separately. Failed intake validation is recorded in import history and, when within the size limit, the original is retained for ETL processing. The API does not expose raw file downloads. An interrupted API process can leave an import or transformation marked running and requires manual investigation. Enforce request-body limits at the reverse proxy before deploying, because multipart parsing occurs before the file size check. Existing worker-based CSV jobs remain separate and do not appear in the new import history.
 
-The built-in `standardize_validate` pipeline cleans headers and category casing, converts dates and numeric fields, validates South African provinces, participation IDs/programme references, and age/count ranges, detects duplicates, and quarantines rejected rows with record-level reasons. It produces programme performance, provincial performance, and aggregate beneficiary summary Gold datasets where input fields allow. It does not enrich from external datasets, schedule jobs, or build a warehouse; PySpark, dbt and Airflow are not used in this phase.
+The built-in `standardize_validate` pipeline cleans headers and category casing, converts dates and numeric fields, validates South African provinces, participation IDs/programme references, and age/count ranges, detects duplicates, and quarantines rejected rows with record-level reasons. It produces programme performance, provincial performance, and aggregate beneficiary summary Gold datasets where input fields allow. A successful or warning transformation also records a Silver-to-warehouse load in `warehouse_loads`. Participation facts have the grain beneficiary + programme + location + participation date; programme outcome facts have the grain programme + location + indicator + load date. Natural-key constraints make repeated loads safe. Expenditure and assessment facts exist as reserved schema tables but are not populated because the current Silver contracts do not contain those fields.
+
+### Phase 6 orchestration
+
+Airflow configuration, startup commands, DAG descriptions, and proxy settings are documented in [airflow/README.md](../airflow/README.md). The API proxy endpoints are:
+
+- `GET /api/v1/orchestration/dags`
+- `GET /api/v1/orchestration/runs`
+- `POST /api/v1/orchestration/dags/{dag_id}/trigger`
+- `GET /api/v1/orchestration/runs/{run_id}/tasks`
+- `GET /api/v1/orchestration/monitoring/summary`
+
+Set `IMPACTFLOW_AIRFLOW_BASE_URL`, `IMPACTFLOW_AIRFLOW_USERNAME`, and
+`IMPACTFLOW_AIRFLOW_PASSWORD` in the API environment before using the proxy.
+Set `IMPACTFLOW_ORCHESTRATION_TOKEN` to require `X-Orchestration-Token` on
+orchestration requests. The current repository does not include a general
+user-authentication system, so this token is the available local protection
+boundary. Airflow credentials are server-side only.
+
+### Phase 5 warehouse and analytics endpoints
+
+- `GET /api/v1/warehouse/overview` returns dimension/fact counts, latest load status, and supported/unavailable source fields.
+- `GET /api/v1/warehouse/loads` returns transformation-to-warehouse load history.
+- `GET /api/v1/analytics/programme-performance` returns target, actual, and safe achievement percentages from programme outcome facts.
+- `GET /api/v1/analytics/provincial-performance` returns participation counts grouped by province.
+- `GET /api/v1/analytics/beneficiary-participation` returns programme and participation counts per synthetic beneficiary ID.
+- `GET /api/v1/analytics/expenditure` and `/indicator-performance` explicitly report unavailable source coverage rather than returning invented values.
+
+Run the Phase 5 migration after configuring PostgreSQL:
+
+```powershell
+cd backend
+.\.venv\Scripts\python.exe -m alembic upgrade head
+```
 
 ### Configure external sources
 

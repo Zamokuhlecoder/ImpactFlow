@@ -1,9 +1,10 @@
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
     JSON,
     CheckConstraint,
+    Date,
     DateTime,
     ForeignKey,
     Index,
@@ -223,6 +224,43 @@ class PipelineRun(Base):
     )
 
 
+class OrchestrationRun(Base):
+    __tablename__ = "orchestration_runs"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    airflow_dag_id: Mapped[str] = mapped_column(String(120), index=True)
+    airflow_run_id: Mapped[str] = mapped_column(String(250), unique=True, index=True)
+    pipeline_run_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("pipeline_runs.id", ondelete="SET NULL"), nullable=True
+    )
+    dataset_import_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("dataset_imports.id", ondelete="SET NULL"), nullable=True
+    )
+    status: Mapped[str] = mapped_column(String(32), default="queued")
+    trigger_type: Mapped[str] = mapped_column(String(16), default="manual")
+    execution_date: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, index=True
+    )
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    records_processed: Mapped[int] = mapped_column(Integer, default=0)
+    records_accepted: Mapped[int] = mapped_column(Integer, default=0)
+    records_rejected: Mapped[int] = mapped_column(Integer, default=0)
+    retry_count: Mapped[int] = mapped_column(Integer, default=0)
+    error_details: Mapped[str | None] = mapped_column(String(500))
+
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('queued', 'running', 'success', 'failed', 'up_for_retry', 'cancelled')",
+            name="ck_orchestration_runs_status",
+        ),
+        CheckConstraint(
+            "trigger_type IN ('manual', 'scheduled')",
+            name="ck_orchestration_runs_trigger_type",
+        ),
+    )
+
+
 class DataQualitySnapshot(Base):
     __tablename__ = "data_quality_snapshots"
 
@@ -284,3 +322,190 @@ class IngestionJob(Base):
         ),
         Index("ix_ingestion_jobs_status_created", "status", "created_at"),
     )
+
+
+class WarehouseLoad(Base):
+    __tablename__ = "warehouse_loads"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    transformation_run_id: Mapped[UUID] = mapped_column(
+        ForeignKey("transformation_runs.id", ondelete="CASCADE"), unique=True, index=True
+    )
+    status: Mapped[str] = mapped_column(String(16), default="running")
+    records_received: Mapped[int] = mapped_column(Integer, default=0)
+    records_loaded: Mapped[int] = mapped_column(Integer, default=0)
+    records_skipped: Mapped[int] = mapped_column(Integer, default=0)
+    error_details: Mapped[str | None] = mapped_column(String(500))
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    transformation_run: Mapped[TransformationRun] = relationship()
+
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('running', 'succeeded', 'failed', 'warning')",
+            name="ck_warehouse_loads_status",
+        ),
+        CheckConstraint(
+            "records_received >= 0 AND records_loaded >= 0 AND records_skipped >= 0",
+            name="ck_warehouse_loads_counts",
+        ),
+    )
+
+
+class DimBeneficiary(Base):
+    __tablename__ = "dim_beneficiary"
+
+    beneficiary_key: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    beneficiary_id: Mapped[str] = mapped_column(String(80), unique=True, index=True)
+    gender: Mapped[str | None] = mapped_column(String(32))
+    age_group: Mapped[str | None] = mapped_column(String(32))
+    province: Mapped[str | None] = mapped_column(String(80))
+    registration_date: Mapped[date | None] = mapped_column(Date)
+
+
+class DimProgramme(Base):
+    __tablename__ = "dim_programme"
+
+    programme_key: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    programme_id: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    programme_name: Mapped[str] = mapped_column(String(120))
+    programme_category: Mapped[str | None] = mapped_column(String(80))
+    programme_status: Mapped[str | None] = mapped_column(String(16))
+
+
+class DimLocation(Base):
+    __tablename__ = "dim_location"
+
+    location_key: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    province: Mapped[str] = mapped_column(String(80))
+    district: Mapped[str | None] = mapped_column(String(120))
+    municipality: Mapped[str | None] = mapped_column(String(120))
+    location_name: Mapped[str | None] = mapped_column(String(120))
+
+    __table_args__ = (
+        Index(
+            "uq_dim_location_natural",
+            "province",
+            "district",
+            "municipality",
+            "location_name",
+            unique=True,
+        ),
+    )
+
+
+class DimDate(Base):
+    __tablename__ = "dim_date"
+
+    date_key: Mapped[int] = mapped_column(Integer, primary_key=True)
+    full_date: Mapped[date] = mapped_column(Date, unique=True, index=True)
+    day: Mapped[int] = mapped_column(Integer)
+    month: Mapped[int] = mapped_column(Integer)
+    month_name: Mapped[str] = mapped_column(String(20))
+    quarter: Mapped[int] = mapped_column(Integer)
+    year: Mapped[int] = mapped_column(Integer)
+
+
+class DimOrganisation(Base):
+    __tablename__ = "dim_organisation"
+
+    organisation_key: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    organisation_id: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    organisation_name: Mapped[str] = mapped_column(String(120))
+    organisation_type: Mapped[str | None] = mapped_column(String(80))
+
+
+class DimIndicator(Base):
+    __tablename__ = "dim_indicator"
+
+    indicator_key: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    indicator_id: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    indicator_name: Mapped[str] = mapped_column(String(160))
+    indicator_category: Mapped[str | None] = mapped_column(String(80))
+    measurement_unit: Mapped[str | None] = mapped_column(String(40))
+    description: Mapped[str | None] = mapped_column(String(500))
+
+
+class FactBeneficiaryParticipation(Base):
+    __tablename__ = "fact_beneficiary_participation"
+
+    participation_key: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    beneficiary_key: Mapped[int] = mapped_column(
+        ForeignKey("dim_beneficiary.beneficiary_key"), index=True
+    )
+    programme_key: Mapped[int] = mapped_column(
+        ForeignKey("dim_programme.programme_key"), index=True
+    )
+    location_key: Mapped[int] = mapped_column(
+        ForeignKey("dim_location.location_key"), index=True
+    )
+    date_key: Mapped[int] = mapped_column(ForeignKey("dim_date.date_key"), index=True)
+    participation_count: Mapped[int] = mapped_column(Integer, default=1)
+    attendance_status: Mapped[str | None] = mapped_column(String(32))
+
+    __table_args__ = (
+        Index(
+            "uq_fact_participation_grain",
+            "beneficiary_key",
+            "programme_key",
+            "location_key",
+            "date_key",
+            unique=True,
+        ),
+    )
+
+
+class FactProgrammeOutcome(Base):
+    __tablename__ = "fact_programme_outcomes"
+
+    outcome_key: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    programme_key: Mapped[int] = mapped_column(
+        ForeignKey("dim_programme.programme_key"), index=True
+    )
+    location_key: Mapped[int] = mapped_column(
+        ForeignKey("dim_location.location_key"), index=True
+    )
+    indicator_key: Mapped[int] = mapped_column(
+        ForeignKey("dim_indicator.indicator_key"), index=True
+    )
+    date_key: Mapped[int] = mapped_column(ForeignKey("dim_date.date_key"), index=True)
+    baseline_value: Mapped[float | None] = mapped_column()
+    target_value: Mapped[float | None] = mapped_column()
+    actual_value: Mapped[float | None] = mapped_column()
+    achievement_percentage: Mapped[float | None] = mapped_column()
+
+    __table_args__ = (
+        Index(
+            "uq_fact_programme_outcome_grain",
+            "programme_key",
+            "location_key",
+            "indicator_key",
+            "date_key",
+            unique=True,
+        ),
+    )
+
+
+class FactExpenditure(Base):
+    __tablename__ = "fact_expenditure"
+
+    expenditure_key: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    programme_key: Mapped[int] = mapped_column(ForeignKey("dim_programme.programme_key"))
+    organisation_key: Mapped[int] = mapped_column(ForeignKey("dim_organisation.organisation_key"))
+    location_key: Mapped[int] = mapped_column(ForeignKey("dim_location.location_key"))
+    date_key: Mapped[int] = mapped_column(ForeignKey("dim_date.date_key"))
+    budget_amount: Mapped[float | None] = mapped_column()
+    actual_expenditure: Mapped[float | None] = mapped_column()
+    remaining_budget: Mapped[float | None] = mapped_column()
+
+
+class FactAssessment(Base):
+    __tablename__ = "fact_assessments"
+
+    assessment_key: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    beneficiary_key: Mapped[int] = mapped_column(ForeignKey("dim_beneficiary.beneficiary_key"))
+    programme_key: Mapped[int] = mapped_column(ForeignKey("dim_programme.programme_key"))
+    indicator_key: Mapped[int] = mapped_column(ForeignKey("dim_indicator.indicator_key"))
+    date_key: Mapped[int] = mapped_column(ForeignKey("dim_date.date_key"))
+    assessment_score: Mapped[float | None] = mapped_column()
+    assessment_type: Mapped[str | None] = mapped_column(String(80))

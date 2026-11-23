@@ -8,7 +8,7 @@ ImpactFlow is a staged portfolio project for demonstrating how operational data 
 
 ## Current status
 
-**Current status:** The database-backed overview and Phase 3 imports are available. Phase 4 adds a Pandas standardisation/validation pipeline, local Bronze/Silver/Gold files, quarantine, quality reports, run history, and the ETL Processing page. The browser CSV view and separate public World Bank population figure remain available. Other module views remain previews.
+**Current status:** The database-backed overview and Phase 3 imports are available. Phase 4 adds a Pandas standardisation/validation pipeline, local Bronze/Silver/Gold files, quarantine, quality reports, run history, and the ETL Processing page. Phase 5 adds a PostgreSQL-compatible analytical star schema, idempotent Silver-to-warehouse loading, load history, and warehouse-backed programme and provincial analytics. Phase 6 adds Airflow DAG definitions, an optional Airflow REST proxy, orchestration run correlation, and a live orchestration workspace. Docker/Airflow must be started separately; this environment does not include Docker. Only fields present in the supported Silver schemas are loaded; expenditure, assessments, gender, registration dates, and district/municipality remain unavailable until source schemas support them.
 
 **Security:** The demo user is a browser-only identity, not authentication. Sign-out only changes the local browser view; it does not protect the API. Anyone who can reach the API can read, change or delete database records and upload files. Run it only on a trusted local machine with synthetic data; do not expose it to a network or use it for production.
 
@@ -45,6 +45,6 @@ npm test
 
 ## Planned platform architecture
 
-Backend setup, database migrations, file ingestion, connector configuration, worker operation, ETL processing, and synthetic database fixtures are documented in [backend/README.md](backend/README.md). Local PostgreSQL can be started with Docker Compose, or the API can use a Neon connection string supplied through a private environment file. The World Bank population lookup is browser-only public-data context, not an ingestion pipeline. Distributed processing, managed object storage, dbt, Airflow, governance, monitoring, and Power BI remain later-phase capabilities.
+Backend setup, database migrations, file ingestion, connector configuration, worker operation, ETL processing, warehouse loading, orchestration, and synthetic database fixtures are documented in [backend/README.md](backend/README.md) and [airflow/README.md](airflow/README.md). Local PostgreSQL and Airflow can be started with Docker Compose, or the API can use a Neon connection string supplied through a private environment file. The World Bank population lookup is browser-only public-data context, not an ingestion pipeline. Distributed processing, managed object storage, dbt, governance, and Power BI remain later-phase capabilities.
 
 See [docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md) and [docs/SYSTEM_ARCHITECTURE.md](docs/SYSTEM_ARCHITECTURE.md) for phase status and diagrams.

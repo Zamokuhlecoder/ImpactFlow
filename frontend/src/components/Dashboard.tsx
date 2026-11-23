@@ -21,6 +21,8 @@ const LazyDataProcessingWorkspace = lazy(() => import('./DataProcessingWorkspace
 const LazyIngestionWorkspace = lazy(() => import('./IngestionWorkspace').then(module => ({ default: module.IngestionWorkspace })))
 const LazyPipelineWorkspace = lazy(() => import('./PipelineWorkspace').then(module => ({ default: module.PipelineWorkspace })))
 const LazyQualityWorkspace = lazy(() => import('./QualityWorkspace').then(module => ({ default: module.QualityWorkspace })))
+const LazyWarehouseWorkspace = lazy(() => import('./WarehouseWorkspace').then(module => ({ default: module.WarehouseWorkspace })))
+const LazyOrchestrationWorkspace = lazy(() => import('./OrchestrationWorkspace').then(module => ({ default: module.OrchestrationWorkspace })))
 
 export default function Dashboard({ onSignOut }: { onSignOut: () => void }) {
   const { pathname } = useLocation()
@@ -30,7 +32,9 @@ export default function Dashboard({ onSignOut }: { onSignOut: () => void }) {
   const isIngestionWorkspace = pathname === '/data-sources' || pathname === '/data-ingestion' || isProcessingWorkspace
   const isPipelineWorkspace = pathname === '/data-pipelines' || pathname === '/monitoring'
   const isAnalyticsWorkspace = pathname === '/analytics'
-  const isOperationalWorkspace = isIngestionWorkspace || isPipelineWorkspace || isAnalyticsWorkspace
+  const isWarehouseWorkspace = pathname === '/data-warehouse'
+  const isOrchestrationWorkspace = pathname === '/orchestration'
+  const isOperationalWorkspace = isIngestionWorkspace || isPipelineWorkspace || isAnalyticsWorkspace || isWarehouseWorkspace || isOrchestrationWorkspace
     || pathname === '/data-quality' || pathname === '/data-lake' || pathname === '/data-lineage'
   const [demoSnapshot, setDemoSnapshot] = useState(() => createDashboardSnapshot())
   const [seed, setSeed] = useState(2026)
@@ -75,6 +79,11 @@ export default function Dashboard({ onSignOut }: { onSignOut: () => void }) {
         queryClient.invalidateQueries({ queryKey: ['processing-runs'] }),
         queryClient.invalidateQueries({ queryKey: ['processing-layer'] }),
         queryClient.invalidateQueries({ queryKey: ['processing-pipelines'] }),
+        queryClient.invalidateQueries({ queryKey: ['warehouse-overview'] }),
+        queryClient.invalidateQueries({ queryKey: ['warehouse-loads'] }),
+        queryClient.invalidateQueries({ queryKey: ['orchestration-summary'] }),
+        queryClient.invalidateQueries({ queryKey: ['orchestration-dags'] }),
+        queryClient.invalidateQueries({ queryKey: ['orchestration-runs'] }),
       ])
       setRefreshMessage('Database-backed workspace data refreshed.')
       return
@@ -191,6 +200,8 @@ export default function Dashboard({ onSignOut }: { onSignOut: () => void }) {
           ) : isProcessingWorkspace ? <Suspense fallback={<div className="panel operations-loading">Loading ETL workspace…</div>}><LazyDataProcessingWorkspace key={pathname} /></Suspense> : isIngestionWorkspace ? <Suspense fallback={<div className="panel operations-loading">Loading ingestion workspace…</div>}><LazyIngestionWorkspace key={pathname} page={pathname === '/data-sources' ? 'sources' : 'imports'} /></Suspense>
             : isPipelineWorkspace ? <Suspense fallback={<div className="panel operations-loading">Loading pipeline workspace…</div>}><LazyPipelineWorkspace key={pathname} page={pathname === '/monitoring' ? 'monitoring' : 'pipelines'} search={search} /></Suspense>
               : isAnalyticsWorkspace ? <Suspense fallback={<div className="panel operations-loading">Loading analytics workspace…</div>}><LazyAnalyticsWorkspace days={days} /></Suspense>
+                : isWarehouseWorkspace ? <Suspense fallback={<div className="panel operations-loading">Loading warehouse workspace…</div>}><LazyWarehouseWorkspace /></Suspense>
+                  : isOrchestrationWorkspace ? <Suspense fallback={<div className="panel operations-loading">Loading orchestration workspace…</div>}><LazyOrchestrationWorkspace /></Suspense>
                 : pathname === '/data-quality' ? <Suspense fallback={<div className="panel operations-loading">Loading quality workspace…</div>}><LazyQualityWorkspace /></Suspense>
                   : pathname === '/data-lake' || pathname === '/data-lineage' ? <Suspense fallback={<div className="panel operations-loading">Loading data lineage…</div>}><LazyArchitectureWorkspace page={pathname === '/data-lake' ? 'lake' : 'lineage'} /></Suspense>
                     : <ModulePage key={pathname} module={currentModule} snapshot={demoSnapshot} search={search} />}

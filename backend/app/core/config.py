@@ -51,3 +51,7 @@ class Settings(BaseSettings):
     gold_dir: Path = PROJECT_ROOT / ".impactflow" / "gold"
     quarantine_dir: Path = PROJECT_ROOT / ".impactflow" / "quarantine"
     source_connections: dict[str, SourceConnection] = Field(default_factory=dict)
+    airflow_base_url: str | None = None
+    airflow_username: str | None = None
+    airflow_password: SecretStr | None = None
+    orchestration_token: SecretStr | None = None

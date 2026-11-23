@@ -31,6 +31,7 @@ from app.schemas.processing import (
     TransformationRunCreate,
     TransformationRunRead,
 )
+from app.warehouse import load_transformation_run
 
 logger = logging.getLogger("impactflow.processing")
 router = APIRouter(prefix="/processing", tags=["ETL processing"])
@@ -229,6 +230,12 @@ def run_processing_pipeline(
         )
         session.add(DataQualitySnapshot(score=run.quality_score, checked_at=run.completed_at))
         session.commit()
+        if run.silver_path:
+            load_transformation_run(
+                session,
+                run,
+                settings.silver_dir / run.silver_path,
+            )
     except (OSError, TypeError, ValueError, SQLAlchemyError) as error:
         session.rollback()
         for path in created_files:

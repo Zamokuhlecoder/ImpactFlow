@@ -11,7 +11,10 @@ from app.api.routes.health import router as health_router
 from app.api.routes.imports import router as imports_router
 from app.api.routes.ingestion import router as ingestion_router
 from app.api.routes.metadata import router as metadata_router
+from app.api.routes.orchestration import router as orchestration_router
 from app.api.routes.processing import router as processing_router
+from app.api.routes.warehouse import analytics_router
+from app.api.routes.warehouse import router as warehouse_router
 from app.core.config import Settings
 from app.database.session import create_database_engine
 
@@ -59,7 +62,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(ingestion_router, prefix=app_settings.api_prefix)
     app.include_router(imports_router, prefix=app_settings.api_prefix)
     app.include_router(processing_router, prefix=app_settings.api_prefix)
+    app.include_router(warehouse_router, prefix=app_settings.api_prefix)
+    app.include_router(analytics_router, prefix=app_settings.api_prefix)
     app.include_router(metadata_router, prefix=app_settings.api_prefix)
+    app.include_router(orchestration_router, prefix=app_settings.api_prefix)
     return app
 
 

@@ -35,7 +35,7 @@ class User(Base):
     )
 
     __table_args__ = (
-        CheckConstraint("role IN ('admin', 'viewer')", name="ck_users_role"),
+        CheckConstraint("role IN ('admin', 'data_owner', 'data_steward', 'data_engineer', 'viewer')", name="ck_users_role"),
     )
 
 
@@ -509,3 +509,6 @@ class FactAssessment(Base):
     date_key: Mapped[int] = mapped_column(ForeignKey("dim_date.date_key"))
     assessment_score: Mapped[float | None] = mapped_column()
     assessment_type: Mapped[str | None] = mapped_column(String(80))
+
+
+from app import governance_models as governance_models  # noqa: E402,F401

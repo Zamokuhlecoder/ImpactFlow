@@ -55,3 +55,7 @@ class Settings(BaseSettings):
     airflow_username: str | None = None
     airflow_password: SecretStr | None = None
     orchestration_token: SecretStr | None = None
+    auth_secret_key: SecretStr | None = None
+    auth_token_ttl_minutes: int = Field(default=480, ge=5, le=10080)
+    governance_service_token: SecretStr | None = None
+    dbt_project_dir: Path = PROJECT_ROOT / "dbt"
